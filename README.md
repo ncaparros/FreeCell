@@ -88,12 +88,15 @@ Not all deals are solvable.
 
 ### Random deal
 
+Every deal is unique. There are 52 factorial ($8*10^{67}$)
+
 ### Moving one card
 
 ### Moving several cards
 
 ### Moving restrictions
 
+### Auto-Complete
 
 ## Structures
 
@@ -112,6 +115,8 @@ Not all deals are solvable.
 ### Managing Free Cells
 
 ### Managing Home Cells
+
+### Managing Auto-Complete
 
 ## Demo
 

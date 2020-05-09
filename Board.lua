@@ -17,6 +17,12 @@ TOP_X = 20
 
 function Board:init()
 
+    self.sounds = {
+        ['forbidden'] = love.audio.newSource('sounds/forbidden.wav', 'static'),
+        ['move'] = love.audio.newSource('sounds/move.wav', 'static'),
+        ['victory'] = love.audio.newSource('sounds/victory.wav', 'static')
+    }
+
     self.deck = Deck(self)
 
     self.freeCells = {}
@@ -85,15 +91,16 @@ function Board:update(dt)
             card = self:getCardAt(love.mouse.getX(), love.mouse.getY())
             if card == nil or card == - 1 then
                 self.state = 'start'
+                self.sounds['forbidden']:play()
             else
                 if self:isForHome(card) then
-                    print("is for home")
+                    self.sounds['move']:play()
                 elseif self:isForOtherCard(card) then
-                    print("is for other card")
+                    self.sounds['move']:play()
                 elseif self:isForBoardFreeCell(card) then
-                    print("for board free cell")
+                    self.sounds['move']:play()
                 elseif self:isForFreeCell(card) then
-                    print("is for free cell")
+                    self.sounds['move']:play()
                     local tempCell = -1
                     if card.onFreeCell == true then
                         self:freeFreeCell(card)
@@ -121,7 +128,7 @@ function Board:update(dt)
                         end
                     end
                 else
-                    print("nope")
+                    self.sounds['forbidden']:play()
                 end
                 self:calculateNFreeCells()
                 
@@ -152,6 +159,7 @@ function Board:update(dt)
 
     if self.nHomeCell == 52 then
         self.state = 'victory'
+        self.sounds['victory']:play()
     end
 
 end
@@ -175,9 +183,9 @@ function Board:finishGame()
         self.boardCards[i].next == -1) then
             if self:isForHome(self.boardCards[i]) == true then
                 print("got one")
-                self.boardCards[i]:render()
-                local t = os.time()
-                while os.time() < t + 0.01 do 
+                self.sounds['move']:play()
+                local t = os.clock()
+                while os.clock() < t + 0.1 do 
                 end
                 print(self.nHomeCells)
                 return
