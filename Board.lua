@@ -70,7 +70,8 @@ function Board:init()
     
 
     for i = 0, 51 do
-        self.boardCards[i]:setLock()
+        self.boardCards[i]:setLock(self.nFreeCells)
+        self.boardCards[i].locked = true
     end
 
     self.state = 'start'
@@ -89,79 +90,126 @@ function Board:update(dt)
                     print("is for home")
                 elseif self:isForOtherCard(card) then
                     print("is for other card")
+                elseif self:isForBoardFreeCell(card) then
+                    print("for board free cell")
                 elseif self:isForFreeCell(card) then
                     print("is for free cell")
                     local tempCell = -1
                     if card.onFreeCell == true then
-                        for i = 0, 11 do
-                            if self.freeCells[i].card == card then
-                                tempCell = self.freeCells[i]
-                                break
-                            end
-                        end
+                        self:freeFreeCell(card)
                     end
 
                     for i = 0, 11 do
                         if self.freeCells[i].isFree == true then
                             self.freeCells[i]:toString()
-                            self.freeCells[i].isFree = false
+                            --self.freeCells[i].isFree = false
 
                             if card.previous ~= nil and
                             card.previous ~= -1 then
                                 card.previous:setNextCard(-1)
-                            else
-                                self.nFreeCells = self.nFreeCells + 1
-                                for i = 4, 11 do
-                                    if self.freeCells[i].x == card.x and
-                                    self.freeCells[i].y == card.y then
-                                        print("jackpot")
-                                        self.freeCells[i].card = -1
-                                        self.freeCells[i].isFree = true
-                                        break
-                                    end
-                                end
                             end
                             card:setCoords(self.freeCells[i].x, self.freeCells[i].y)
                             card:setPreviousCard(-1)
                             card:setNextCard(-1)
                             card:setOnFreeCell(true)
-                            self.nFreeCells = self.nFreeCells - 1
                             self.freeCells[i].card = card
+                            --self.freeCells[i].isFree = false
                             self.freeCells[i]:update(dt)
                             self.freeCells[i]:toString()
 
                             break
                         end
                     end
-
-                    if tempCell ~= -1 then
-                        print("temp not nil")
-                        tempCell.card = -1
-                        tempCell.isFree = true
-                    end
                 else
                     print("nope")
                 end
+                self:calculateNFreeCells()
+                
             end
+            self:calculateNFreeCells()
             for i = 0, 51 do
-                self.boardCards[i]:setLock()
+                self.boardCards[i]:setLock(self.nFreeCells)
+                self.boardCards[i]:setLockedForEnd()
             end
             --self.state = 'start'
+
         end
+        
         self:render()
     elseif self.state == 'click' and
     love.mouse.isDown(1) == false then
         self.state = 'start'
+    elseif self.state == 'finish' then
+        self:finishGame()
+        self:calculateNFreeCells()
+        self:render()
+    end
+
+    if self:isNoMoreLock() then
+        self.state = 'finish'
+        self:render()
+    end
+
+    if self.nHomeCell == 52 then
+        self.state = 'victory'
     end
 
 end
 
+function Board:isNoMoreLock()
+    for i = 0, 51 do
+        if self.boardCards[i].locked 
+        and self.boardCards[i].onHomeCell == false then
+            return false
+        end
+    end
+    print("NO MORE LOCK")
+    return true
+end
+
+function Board:finishGame()
+    print("FINISH GAME")
+    for i = 0, 51 do
+        if self.boardCards[i].onHomeCell == false and
+        (self.boardCards[i].next == nil or
+        self.boardCards[i].next == -1) then
+            if self:isForHome(self.boardCards[i]) == true then
+                print("got one")
+                self.boardCards[i]:render()
+                local t = os.time()
+                while os.time() < t + 0.01 do 
+                end
+                print(self.nHomeCells)
+                return
+            end 
+        end
+    end
+end
+
+function Board:calculateNFreeCells()
+    local n = 0
+    for i = 0, 3 do
+        if self.freeCells[i].isFree then
+            n = n + 1
+        end
+    end
+    for i = 4, 11 do
+        if self.freeCells[i].card == nil or 
+        self.freeCells[i].card == - 1 then
+            n = n + 1
+        end
+    end
+    self.nFreeCells = n
+end
+
 function Board:isForOtherCard(card)
+
     for i = 0, 51 do 
         if self.boardCards[i].lock == false and
         self.boardCards[i].value - 1 == card.value and
         self.boardCards[i].isBlack ~= card.isBlack and
-        self.boardCards[i].onFreeCell == false and
+        (self.boardCards[i].onFreeCell == false or
+        self.boardCards[i].y == START_BOARD) and
         self.boardCards[i].onHomeCell == false and
         (self.boardCards[i].next == nil or self.boardCards[i].next == -1) then
             print("IF")
@@ -169,20 +217,9 @@ function Board:isForOtherCard(card)
             if card.previous ~= nil and
             card.previous ~= - 1 then
                 card.previous:setNextCard(-1)
-            else
-                self.nFreeCells = self.nFreeCells + 1
-                print("ELSE")
-                if card.onFreeCell == true then
-                    print("is on free")
-                    for i = 4, 11 do
-                        if self.freeCells[i].x == card.x and 
-                        self.freeCells[i].y == card.y then
-                            self.freeCells[i].card = -1
-                            self.freeCells[i].isFree = true
-                            break
-                        end
-                    end
-                end
+            elseif card.onFreeCell then
+                print("other card / cell freed")
+                self:freeFreeCell(card)
             end
             card:setCoords(self.boardCards[i].x, self.boardCards[i].y + 30)
             self.boardCards[i]:setNextCard(card)
@@ -195,65 +232,136 @@ function Board:isForOtherCard(card)
 end
 
 function Board:isForHome(card)
-    print(self.nHomeCell)
+    --print(self.nHomeCell)
+    if card.next == nil or
+    card.next == - 1 then
     --card:toString()
-    for i = 0, 3 do
-
-        if card.value == 1 
-        and (self.homeCells[i].card == nil or
-        self.homeCells[i].card == -1) then
-            print("1 home")
-            self.homeCells[i].card = card
-            self.homeCells[i].color = card.color
-            card:setCoords(self.homeCells[i].x, self.homeCells[i].y)
-
-            if card.previous ~= nil and
-            card.previous ~= -1  then
-                print("not on free cell")
-                card.previous:setNextCard(-1)
-                card:setPreviousCard(-1)
-            end
-            card:setOnHomeCell()
-
-            self.nHomeCell = self.nHomeCell + 1
-            --card:render()
-            return true
-
-        elseif self.homeCells[i].color == card.color and
-        self.homeCells[i].card.value == card.value - 1 then
-            print("new home")
-            if card.previous ~= nil and
-            card.previous ~= -1 then
-                card.previous:setNextCard(-1)
-            end
-
-            if card.onFreeCell == true then
-                for i = 4, 11 do
-                    if self.freeCells[i].x == card.x and
-                    self.freeCells[i].y == card.y then
-                        self.freeCells[i].card = -1
-                        break
-                    end
+        for i = 0, 3 do
+            if card.value == 1 
+            and (self.homeCells[i].card == nil or
+            self.homeCells[i].card == -1) then
+                print("1 home")
+                
+                if card.previous ~= nil and 
+                card.previous ~= - 1 then
+                    print("not on free cell")
+                    card.previous:setNextCard(-1)
+                    card:setPreviousCard(-1)
+                elseif card.onFreeCell then
+                        self:freeFreeCell(card) 
                 end
+
+                self.homeCells[i].card = card
+                self.homeCells[i].color = card.color
+                card.x = self.homeCells[i].x
+                card.y = self.homeCells[i].y
+
+
+                card:setOnHomeCell()
+                self.nHomeCell = self.nHomeCell + 1
+                --card:render()
+                return true
+
+            elseif self.homeCells[i].color == card.color and
+            self.homeCells[i].card ~= nil and
+            self.homeCells[i].card ~= -1 then
+                
+                local val = self:getLastCard(self.homeCells[i].card).value
+                
+                if val == card.value - 1 then
+                    print("NEW HOME")
+                    if card.previous ~= nil and
+                    card.previous ~= - 1 then
+                        card.previous:setNextCard(-1)             
+                    end
+
+                    if card.onFreeCell then
+                        self:freeFreeCell(card)
+                    end
+                    
+                    self:getLastCard(self.homeCells[i].card).next = card
+                    --self.boardCards[card.id - 1]:setNextCard(card)
+                    card:setOnHomeCell()
+                    card.x = self.homeCells[i].x
+                    card.y = self.homeCells[i].y
+                    print("SET X " .. card.x .. " | " .. self.homeCells[i].x .." Y " .. card.y .. " | " .. self.homeCells[i].y)
+                    self.nHomeCell = self.nHomeCell + 1
+                    self.homeCells[i].card:render()
+                    return true
+                else
+                    return false
+                end
+            else
+                print("else for home")
+                --card:toString()
             end
-            
-            self.homeCells[i].card.next = card
-            --self.boardCards[card.id - 1]:setNextCard(card)
-            card:setOnHomeCell()
-            card:setCoords(self.homeCells[i].x, self.homeCells[i].y)
-            
-            self.nHomeCell = self.nHomeCell + 1
-            --card:render()
-            return true
+        end
+        return false
+    else
+        print("next exists")
+        return false
+    end
+end
+
+function Board:freeFreeCell(card)
+    for i = 0, 11 do
+        if self.freeCells[i].x == card.x and
+        self.freeCells[i].y == card.y then
+            self.freeCells[i].card = -1
+            self.freeCells[i].isFree = true
+            card.onFreeCell = false
+            print("freed " .. tostring(i))
+            break
         end
     end
-    return false
 end
+
+function Board:getLastCard(card)
+    --print("get last card of : ")
+    --card:toString()
+    if card.next == nil or
+    card.next == -1 then
+        --print("next not nil")
+        card:toString()
+        return card
+    else
+        --print("else last card")
+        return self:getLastCard(card.next)
+    end
+end
+
+function Board:isForBoardFreeCell(card)
+    if self.nFreeCells > 0 and 
+    card.lock == false then
+        for i = 4, 11 do
+            if self.freeCells[i].isFree then
+                self:freeFreeCell(card)
+                self.freeCells[i].card = card
+                self.freeCells[i].isFree = false
+                card.x = self.freeCells[i].x
+                card.y = self.freeCells[i].y
+                card.onFreeCell = true
+                if card.previous ~= nil and
+                card.previous ~= -1 then
+                    card.previous.next = -1
+                end
+                card.previous = - 1
+                card:moveNexts()
+                return true
+            end
+        end
+        return false
+    else
+        return false
+    end
+end
+
 
 function Board:isForFreeCell(card)
     if self.nFreeCells > 0 and 
     card.lock == false and 
-    card.onHomeCell == false then
+    card.onHomeCell == false and
+    (card.next == nil or card.next == -1) then
         return true
     else
         return false
@@ -261,7 +369,7 @@ function Board:isForFreeCell(card)
 end
 
 function Board:getCardAt(x, y)
-    for i = 0, 51 do
+    for i = 51, 0, - 1 do
         if self.boardCards[i]:isAtCoords(x, y) and 
         self.boardCards[i].lock == false then
             self.boardCards[i]:toString()
@@ -272,22 +380,36 @@ function Board:getCardAt(x, y)
 end
 
 function Board:render()
+    love.graphics.setFont(love.graphics.newFont('fonts/font.otf', 20))
 
-    love.graphics.print(tostring(self.nFreeCells) .. " - " .. tostring(self.nHomeCell), WINDOW_WIDTH/2, 20)
-    if self.state == 'start' or self.state == 'click' then
-        for i = 0, 3 do
-            
-            self.freeCells[i]:render()
-            self.homeCells[i]:render()
+    love.graphics.print(tostring(self.nFreeCells) .. " - " .. tostring(self.nHomeCell), WINDOW_WIDTH/2 - 20, 20)
+
+    if self.state == 'victory' then
+        love.graphics.setFont(love.graphics.newFont('fonts/font.otf', 40))
+        love.graphics.print("VICTORY !", WINDOW_WIDTH/2 - 40, WINDOW_HEIGHT/2 - 20)
+    elseif self.state == 'finish' then
+        love.graphics.setFont(love.graphics.newFont('fonts/font.otf', 40))
+        love.graphics.print("FINISH !", WINDOW_WIDTH/2 - 40, START_BOARD - 60)
+    end
+
+    for i = 0, 3 do
+        
+        self.freeCells[i]:render()
+        self.homeCells[i]:render()
+        if self.homeCells[i].card ~= nil and
+        self.homeCells[i].card ~= - 1 then
+            self.homeCells[i].card:render()
         end
+    end
 
-        for i = 0, 51 do
-            if self.boardCards[i].onFreeCell then
-                love.graphics.draw(self.deck.spritesheet, self.deck.sprites[self.boardCards[i].id], self.boardCards[i].x, self.boardCards[i].y)
-            elseif self.boardCards[i].previous == nil or
-            self.boardCards[i].previous == -1 then
-                self.boardCards[i]:render()
-            end
+    for i = 0, 51 do
+        if self.boardCards[i].onFreeCell and 
+        (self.boardCards[i].next == nil or 
+        self.boardCards[i].next == -1) then
+            love.graphics.draw(self.deck.spritesheet, self.deck.sprites[self.boardCards[i].id], self.boardCards[i].x, self.boardCards[i].y)
+        elseif self.boardCards[i].previous == nil or
+        self.boardCards[i].previous == -1 then
+            self.boardCards[i]:render()
         end
     end
 end
@@ -298,6 +420,17 @@ function Board:deal()
         self.boardCards[i + 7]:setCoords(CardWidth + LEFT_BOARD + 5, START_BOARD + i * 30)
         self.boardCards[i + 14]:setCoords(LEFT_BOARD + 2 * CardWidth + 10, START_BOARD + i * 30)
         self.boardCards[i + 21]:setCoords(LEFT_BOARD + 3 * CardWidth + 15, START_BOARD + i * 30)
+
+        if i == 0 then
+            self.freeCells[4].card = self.boardCards[0]
+            self.boardCards[0].onFreeCell = true
+            self.freeCells[5].card = self.boardCards[7]
+            self.boardCards[7].onFreeCell = true
+            self.freeCells[6].card = self.boardCards[14]
+            self.boardCards[14].onFreeCell = true
+            self.freeCells[7].card = self.boardCards[21]
+            self.boardCards[21].onFreeCell = true
+        end
 
         if i > 0 then
             self.boardCards[i]:setPreviousCard(self.boardCards[i - 1])
@@ -320,6 +453,17 @@ function Board:deal()
         self.boardCards[i + 34]:setCoords(LEFT_BOARD + 5 * CardWidth + 25, START_BOARD + i * 30)
         self.boardCards[i + 40]:setCoords(LEFT_BOARD + 6 * CardWidth + 30, START_BOARD + i * 30)
         self.boardCards[i + 46]:setCoords(LEFT_BOARD + 7 * CardWidth + 35, START_BOARD + i * 30)
+
+        if i == 0 then
+            self.freeCells[8].card = self.boardCards[28]
+            self.boardCards[28].onFreeCell = true
+            self.freeCells[9].card = self.boardCards[34]
+            self.boardCards[34].onFreeCell = true
+            self.freeCells[10].card = self.boardCards[40]
+            self.boardCards[40].onFreeCell = true
+            self.freeCells[11].card = self.boardCards[46]
+            self.boardCards[46].onFreeCell = true
+        end
 
         if i > 0 then
             self.boardCards[i + 28]:setPreviousCard(self.boardCards[i + 27])

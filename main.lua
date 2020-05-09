@@ -26,6 +26,7 @@ end
 function love.draw()
 -- begin virtual resolution drawing
     push:apply('start')
+    love.window.setTitle("Nina's CS50 FreeCell")
 
     -- clear screen using Mario background blue
     love.graphics.clear(62/255, 193/255, 96/255, 255/255)

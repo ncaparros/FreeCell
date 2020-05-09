@@ -21,6 +21,7 @@ function Card:update(dt)
 
 end
 
+
 function Card:setSprite(sprite)
     self.sprite = sprite
 end
@@ -79,14 +80,37 @@ function Card:setNextCard(card)
     self.next = card
 end
 
-function Card:setLock()
-    if self.next == nil or self.next == -1 then
+function Card:setLock(nFreeCells)
+    if self:getRowNb() > nFreeCells then
+        self.lock = true
+    elseif self.next == nil or self.next == -1 then
         self.lock = false
     elseif self.isBlack ~= self.next.isBlack and
     self.value - 1 == self.next.value then
         self.lock = false
     else
         self.lock = true
+    end
+end
+
+function Card:setLockedForEnd()
+    if self.next == nil or self.next == -1 then
+        self.locked = false
+    elseif self.isBlack ~= self.next.isBlack and
+    self.value - 1 == self.next.value then
+        self.locked = false
+    else
+        self.locked = true
+    end
+end 
+
+
+function Card:getRowNb()
+    if self.next == nil or
+    self.next == -1 then
+        return 0
+    else
+        return self.next:getRowNb() + 1
     end
 end
 
@@ -104,6 +128,7 @@ end
 function Card:toString()
     if self ~= nil and self ~= -1 then
         print("id : " .. self.id .. " value : " .. self.value .. " color : " .. self.color .. " locked : ".. tostring(self.lock) .. " isBlack : " .. tostring(self.isBlack))
+        print("rows : " .. self:getRowNb())
         if self.next ~= nil and self.next ~= - 1 then
             print("next : " .. self.next.value)
         end

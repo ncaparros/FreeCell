@@ -19,7 +19,7 @@ function FreeCell:update(dt)
 end
 
 function FreeCell:toString()
-    print(tostring(self.isFree))
+    print("is free cell free : " .. tostring(self.isFree))
 end
 
 function FreeCell:render()
