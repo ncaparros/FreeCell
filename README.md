@@ -46,7 +46,7 @@ The game is composed of :
 * Four open cells (called Free Cells here)
 * A board
 
-<img src="src/board_init.JPG">
+<img src="src/board_init.jpg">
 
 All cards are randomly dealt face-up from at the begining of the game into eight cascades, half of them composed by seven cards, the other half by six, on the board. 
 
@@ -121,11 +121,11 @@ It is possible to move a tableau if the number of cards in that tableau is less 
 Examples:
 The four of clubs and the three of diamonds can be placed on the five of diamonds, as one open cell is free.
 
-<img src="src/board_moves.JPG">
+<img src="src/board_moves.jpg">
 
 The tableau starting with the ten of hearts cannot be placed on the jack of spades, as there is only one free open cell. 
 
-<img src="src/board_forbiden.JPG">
+<img src="src/board_forbiden.jpg">
 
 ### Auto-Complete
 
