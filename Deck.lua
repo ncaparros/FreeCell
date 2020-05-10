@@ -28,12 +28,7 @@ end
 
 
 function Deck:update(dt)
-
 end
 
 function Deck:render()
-    --love.graphics.draw(self.spritesheet, self.sprites[1], 50, 50)
-    for i = 0, 8 do
-        --love.graphics.draw(self.spritesheet, self.sprites[self.cards[i]], CardWidth/2 +  i * CardWidth + 10 * i, 2 * CardHeight)
-    end
 end

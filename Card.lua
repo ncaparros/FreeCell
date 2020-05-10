@@ -18,7 +18,6 @@ function Card:init()
 end
 
 function Card:update(dt)
-
 end
 
 
@@ -67,10 +66,6 @@ function Card:isAtCoords(x, y)
     end
 end
 
-function Card:remPrevious()
-    self.previous = nil
-    --self.previous = -1
-end
 
 function Card:setPreviousCard(card)
     self.previous = card
@@ -119,9 +114,6 @@ function Card:moveNexts()
     self.next ~= -1 then
         self.next:setCoords(self.x, self.y + 30)
         self.next:moveNexts()
-        print("move nexts")
-    else
-        print("no next " .. tostring(self.next))
     end
 end
 
