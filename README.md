@@ -348,12 +348,19 @@ Here a a few features I'd like to implement in the future :
 ## References
 
 [CS50x](https://cs50.harvard.edu/x/2020/)
+
 [CS50x on edX](https://courses.edx.org/courses/course-v1:HarvardX+CS50+X/course/)
+
 [CS50x's final project](https://cs50.harvard.edu/x/2020/project/)
+
 [FreeCell](https://en.wikipedia.org/wiki/FreeCell)
+
 [HarvardX on edX](https://www.edx.org/school/harvardx)
+
 [Microsoft FreeCell](https://en.wikipedia.org/wiki/Microsoft_FreeCell)
+
 [PLATO](https://en.wikipedia.org/wiki/PLATO_(computer_system))
+
 [spriters-resources](https://www.spriters-resource.com/pc_computer/solitaire/sheet/107016/)
 
 ## About the author
